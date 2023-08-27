@@ -29,6 +29,7 @@ class Pocl < Formula
   depends_on "hwloc"
   depends_on "llvm@15"
   depends_on "opencl-icd-loader"
+  depends_on "spirv-llvm-translator"
   uses_from_macos "python" => :build
 
   on_macos do
@@ -66,6 +67,7 @@ class Pocl < Formula
       -DLLVM_BINDIR=#{llvm.opt_bin}
       -DLLVM_LIBDIR=#{llvm.opt_lib}
       -DLLVM_INCLUDEDIR=#{llvm.opt_include}
+      -DLLVM_SPIRV=#{Formula["spirv-llvm-translator"].opt_bin}/llvm-spirv
     ]
     # Avoid installing another copy of OpenCL headers on macOS
     args << "-DOPENCL_H=#{Formula["opencl-headers"].opt_include}/CL/opencl.h" if OS.mac?
