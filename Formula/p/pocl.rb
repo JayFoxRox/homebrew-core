@@ -6,7 +6,7 @@ class Pocl < Formula
   sha256 "82314362552e050aff417318dd623b18cf0f1d0f84f92d10a7e3750dd12d3a9a"
   license "MIT"
   revision 2
-  head "https://github.com/pocl/pocl.git", branch: "master"
+  head "https://github.com/pocl/pocl.git", branch: "main"
 
   livecheck do
     url "http://portablecl.org/download.html"
