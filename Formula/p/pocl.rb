@@ -27,24 +27,13 @@ class Pocl < Formula
   depends_on "opencl-headers" => :build
   depends_on "pkg-config" => :build
   depends_on "hwloc"
-  depends_on "llvm@15"
+  depends_on "llvm"
   depends_on "opencl-icd-loader"
   depends_on "spirv-llvm-translator"
   uses_from_macos "python" => :build
 
-  on_macos do
-    depends_on "llvm" => :build # because of `fails_with :clang`
-  end
-
-  fails_with :clang do
-    cause <<-EOS
-      .../pocl-3.1/lib/CL/devices/builtin_kernels.cc:24:10: error: expected expression
-               {BIArg("char*", "input", READ_BUF),
-               ^
-    EOS
-  end
-
-  fails_with gcc: "5" # LLVM is built with GCC
+  # Fix build with clang and a bug with CPU devices
+  patch :DATA
 
   def install
     ENV.llvm_clang if OS.mac?
@@ -89,3 +78,80 @@ class Pocl < Formula
     refute_predicate include/"OpenCL", :exist?
   end
 end
+
+__END__
+diff --git a/lib/llvmopencl/linker.cpp b/lib/llvmopencl/linker.cpp
+index 92e862c7..4c45eab9 100644
+--- a/lib/llvmopencl/linker.cpp
++++ b/lib/llvmopencl/linker.cpp
+@@ -61,9 +61,9 @@ IGNORE_COMPILER_WARNING("-Wunused-parameter")
+ 
+ using namespace llvm;
+ 
+-// #include <cstdio>
+-// #define DB_PRINT(...) printf("linker:" __VA_ARGS__)
+-#define DB_PRINT(...)
++ #include <cstdio>
++ //#define DB_PRINT(...) printf("linker:" __VA_ARGS__)
++#define DB_PRINT(...)
+ 
+ namespace pocl {
+ 
+
+diff --git a/bin/CMakeLists.txt b/bin/CMakeLists.txt
+index 2fa37f44..f41983b1 100644
+--- a/bin/CMakeLists.txt
++++ b/bin/CMakeLists.txt
+@@ -28,7 +28,9 @@ set_opencl_header_includes()
+ add_executable(poclcc poclcc.c)
+ harden(poclcc)
+ 
+-target_link_libraries(poclcc poclu ${OPENCL_LIBS})
++message("libs are ${OPENCL_LIBS}")
++target_link_libraries(poclcc PRIVATE poclu ${OPENCL_LIBS})
++target_link_directories(poclcc PRIVATE "${OPENCL_LIBDIR}")
+ 
+ install(TARGETS "poclcc" RUNTIME
+         DESTINATION "${POCL_INSTALL_PUBLIC_BINDIR}" COMPONENT "poclcc")
+diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
+index 2e2ddc0a..817f368a 100644
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -78,6 +78,8 @@ else()
+   set(OPENCL_LIBS "${PTHREAD_LIBRARY};${POCL_LIBRARY_NAME};${POCL_TRANSITIVE_LIBS}")
+ 
+ endif()
++message("XXXXX OPENCL_LIBS=${OPENCL_LIBS} OPENCL_LIBDIR=${OPENCL_LIBDIR}")
++link_directories("${OPENCL_LIBDIR}")
+ 
+ if(SANITIZER_OPTIONS)
+   list(INSERT OPENCL_LIBS 0 ${SANITIZER_LIBS})
+
+diff --git a/lib/kernel/CMakeLists.txt b/lib/kernel/CMakeLists.txt
+index 2c89f458..3aea5c4c 100644
+--- a/lib/kernel/CMakeLists.txt
++++ b/lib/kernel/CMakeLists.txt
+@@ -29,6 +29,7 @@ acos.cl
+ acosh.cl
+ acospi.cl
+ add_sat.cl
++addrspace_operators.ll
+ all.cl
+ any.cl
+ as_type.cl
+
+diff --git a/lib/CL/devices/CMakeLists.txt b/lib/CL/devices/CMakeLists.txt
+index f9e0c8c9..bbcdd8d2 100644
+--- a/lib/CL/devices/CMakeLists.txt
++++ b/lib/CL/devices/CMakeLists.txt
+@@ -23,6 +23,9 @@
+ #
+ #=============================================================================
+ 
++set(CMAKE_CXX_STANDARD 11)
++set(CMAKE_CXX_STANDARD_REQUIRED True)
++
+ if(ENABLE_LOADABLE_DRIVERS)
+ 
+   function(add_pocl_device_library name)
+
