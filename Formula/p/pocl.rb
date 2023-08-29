@@ -1,9 +1,8 @@
 class Pocl < Formula
   desc "Portable Computing Language"
   homepage "http://portablecl.org"
-  # TODO: Check if we can use unversioned `llvm` at version bump.
-  url "http://portablecl.org/downloads/pocl-3.1.tar.gz"
-  sha256 "82314362552e050aff417318dd623b18cf0f1d0f84f92d10a7e3750dd12d3a9a"
+  url "https://github.com/pocl/pocl/archive/refs/tags/v4.0.tar.gz"
+  sha256 "7f4e8ab608b3191c2b21e3f13c193f1344b40aba7738f78762f7b88f45e8ce03"
   license "MIT"
   revision 2
   head "https://github.com/pocl/pocl.git", branch: "main"
