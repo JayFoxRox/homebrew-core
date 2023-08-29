@@ -56,6 +56,7 @@ class Pocl < Formula
       -DLLVM_LIBDIR=#{llvm.opt_lib}
       -DLLVM_INCLUDEDIR=#{llvm.opt_include}
       -DLLVM_SPIRV=#{Formula["spirv-llvm-translator"].opt_bin}/llvm-spirv
+      -DENABLE_SLEEF=OFF
     ]
     # Avoid installing another copy of OpenCL headers on macOS
     args << "-DOPENCL_H=#{Formula["opencl-headers"].opt_include}/CL/opencl.h" if OS.mac?
